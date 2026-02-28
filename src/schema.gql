@@ -1,0 +1,44 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Announcement {
+  category: [String!]!
+  content: String!
+  createdAt: DateTime!
+  id: Int!
+  publicationDate: DateTime!
+  title: String!
+  updatedAt: DateTime!
+}
+
+input CreateAnnouncementInput {
+  category: [String!]!
+  content: String!
+  publicationDate: DateTime!
+  title: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Mutation {
+  createAnnouncement(createAnnouncementInput: CreateAnnouncementInput!): Announcement!
+  removeAnnouncement(id: Int!): Announcement!
+  updateAnnouncement(updateAnnouncementInput: UpdateAnnouncementInput!): Announcement!
+}
+
+type Query {
+  announcement(id: Int!): Announcement!
+  announcements: [Announcement!]!
+}
+
+input UpdateAnnouncementInput {
+  category: [String!]
+  content: String
+  id: Int!
+  publicationDate: DateTime
+  title: String
+}
