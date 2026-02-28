@@ -6,6 +6,7 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AnnouncementsModule } from './announcements/announcements.module';
       playground: true,
     }),
     AnnouncementsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

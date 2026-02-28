@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { AnnouncementsResolver } from './announcements.resolver';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementInput } from './dto/create-announcement.input';
+import { Category } from '../categories/entities/category.entity';
 
 describe('AnnouncementsResolver', () => {
   let resolver: AnnouncementsResolver;
@@ -71,7 +72,7 @@ describe('AnnouncementsResolver', () => {
       const input: CreateAnnouncementInput = {
         title: 'New',
         content: 'Content',
-        category: ['News'],
+        categoryIds: [1],
         publicationDate: new Date(),
       };
       const created = { id: 1, ...input };

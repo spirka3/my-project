@@ -3,7 +3,7 @@
 # ------------------------------------------------------
 
 type Announcement {
-  category: [String!]!
+  categories: [Category!]!
   content: String!
   createdAt: DateTime!
   id: Int!
@@ -12,11 +12,22 @@ type Announcement {
   updatedAt: DateTime!
 }
 
+type Category {
+  createdAt: DateTime!
+  id: Int!
+  name: String!
+  updatedAt: DateTime!
+}
+
 input CreateAnnouncementInput {
-  category: [String!]!
+  categoryIds: [Int!]!
   content: String!
   publicationDate: DateTime!
   title: String!
+}
+
+input CreateCategoryInput {
+  name: Int!
 }
 
 """
@@ -26,19 +37,29 @@ scalar DateTime
 
 type Mutation {
   createAnnouncement(createAnnouncementInput: CreateAnnouncementInput!): Announcement!
+  createCategory(createCategoryInput: CreateCategoryInput!): Category!
   removeAnnouncement(id: Int!): Announcement!
+  removeCategory(id: Int!): Category!
   updateAnnouncement(updateAnnouncementInput: UpdateAnnouncementInput!): Announcement!
+  updateCategory(updateCategoryInput: UpdateCategoryInput!): Category!
 }
 
 type Query {
   announcement(id: Int!): Announcement!
   announcements: [Announcement!]!
+  categories: [Category!]!
+  category(id: Int!): Category!
 }
 
 input UpdateAnnouncementInput {
-  category: [String!]
+  categoryIds: [Int!]
   content: String
   id: Int!
   publicationDate: DateTime
   title: String
+}
+
+input UpdateCategoryInput {
+  id: Int!
+  name: Int
 }

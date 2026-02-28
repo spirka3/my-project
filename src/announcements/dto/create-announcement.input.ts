@@ -1,4 +1,4 @@
-import { InputType, Field } from '@nestjs/graphql';
+import { InputType, Field, Int } from '@nestjs/graphql';
 
 @InputType()
 export class CreateAnnouncementInput {
@@ -11,6 +11,6 @@ export class CreateAnnouncementInput {
   @Field(() => Date)
   publicationDate: Date;
 
-  @Field(() => [String])
-  category: string[];
+  @Field(() => [Int])
+  categoryIds: number[];
 }
