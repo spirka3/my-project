@@ -16,14 +16,32 @@ export class AnnouncementsService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
+  private async fetchCategories(categoryIds: number[]): Promise<Category[]> {
+    if (categoryIds.length === 0) {
+      return [];
+    }
+
+    const categories = await this.categoryRepository.findBy({
+      id: In(categoryIds),
+    });
+
+    if (categories.length !== categoryIds.length) {
+      const foundIds = categories.map((c) => c.id);
+      const missingIds = categoryIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Category IDs not found: ${missingIds.join(', ')}`,
+      );
+    }
+
+    return categories;
+  }
+
   async create(
     createAnnouncementInput: CreateAnnouncementInput,
   ): Promise<Announcement> {
     const { categoryIds, ...details } = createAnnouncementInput;
 
-    const categories = await this.categoryRepository.findBy({
-      id: In(categoryIds),
-    });
+    const categories = await this.fetchCategories(categoryIds);
 
     const newAnnouncement = this.announcementRepository.create({
       ...details,
@@ -60,11 +78,9 @@ export class AnnouncementsService {
     id: number,
     updateAnnouncementInput: UpdateAnnouncementInput,
   ): Promise<Announcement> {
-    const categories = updateAnnouncementInput.categoryIds
-      ? await this.categoryRepository.findBy({
-          id: In(updateAnnouncementInput.categoryIds),
-        })
-      : [];
+    const { categoryIds = [] } = updateAnnouncementInput;
+
+    const categories = await this.fetchCategories(categoryIds);
 
     const announcement = await this.announcementRepository.preload({
       ...updateAnnouncementInput,
