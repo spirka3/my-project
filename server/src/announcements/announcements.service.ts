@@ -54,11 +54,17 @@ export class AnnouncementsService {
   async findAll(filter?: AnnouncementsFilterInput): Promise<Announcement[]> {
     const { searchTerm, categoryIds } = filter || {};
 
+    const where = {
+      ...(categoryIds?.length && { categories: { id: In(categoryIds) } }),
+    };
+
     return await this.announcementRepository.find({
-      where: {
-        ...(searchTerm && { title: ILike(`%${searchTerm}%`) }),
-        ...(categoryIds?.length && { categories: { id: In(categoryIds) } }),
-      },
+      where: searchTerm
+        ? [
+            { ...where, title: ILike(`%${searchTerm}%`) },
+            { ...where, content: ILike(`%${searchTerm}%`) },
+          ]
+        : where,
       relations: ['categories'],
     });
   }
@@ -97,6 +103,6 @@ export class AnnouncementsService {
   async remove(id: number): Promise<Announcement> {
     const announcement = await this.findOne(id);
 
-    return await this.announcementRepository.remove(announcement);
+    return this.announcementRepository.softRemove(announcement);
   }
 }

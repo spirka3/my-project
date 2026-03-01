@@ -6,6 +6,7 @@ type Announcement {
   categories: [Category!]!
   content: String!
   createdAt: DateTime!
+  deletedAt: DateTime
   id: Int!
   publicationDate: DateTime!
   title: String!
@@ -45,7 +46,7 @@ type Mutation {
   createCategory(createCategoryInput: CreateCategoryInput!): Category!
   removeAnnouncement(id: Int!): Announcement!
   removeCategory(id: Int!): Category!
-  updateAnnouncement(updateAnnouncementInput: UpdateAnnouncementInput!): Announcement!
+  updateAnnouncement(id: Int!, updateAnnouncementInput: UpdateAnnouncementInput!): Announcement!
   updateCategory(updateCategoryInput: UpdateCategoryInput!): Category!
 }
 

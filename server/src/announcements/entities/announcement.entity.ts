@@ -7,8 +7,10 @@ import {
   JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
+import { IsOptional } from 'class-validator';
 
 @ObjectType()
 @Entity()
@@ -41,4 +43,9 @@ export class Announcement {
   @Field(() => Date)
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
+
+  @Field(() => Date, { nullable: true })
+  @DeleteDateColumn({ type: 'timestamp' })
+  @IsOptional()
+  deletedAt: Date;
 }

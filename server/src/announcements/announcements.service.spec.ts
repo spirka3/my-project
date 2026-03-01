@@ -35,7 +35,7 @@ describe('AnnouncementsService', () => {
             create: jest.fn(),
             save: jest.fn(),
             preload: jest.fn(),
-            remove: jest.fn(),
+            softRemove: jest.fn(),
           },
         },
         {
@@ -93,17 +93,14 @@ describe('AnnouncementsService', () => {
   });
 
   describe('findAll', () => {
-    it('should filter by searchTerm and categoryIds', async () => {
-      const filter = { searchTerm: 'ti', categoryIds: [1] };
-      announcementRepo.find.mockResolvedValue([createMockAnnouncement()]);
+    it('should filter by searchTerm in both title OR content', async () => {
+      const filter = { searchTerm: 'ti' };
+      announcementRepo.find.mockResolvedValue([]);
 
       await service.findAll(filter);
 
       expect(announcementRepo.find).toHaveBeenCalledWith({
-        where: {
-          title: ILike('%ti%'),
-          categories: { id: In([1]) },
-        },
+        where: [{ title: ILike('%ti%') }, { content: ILike('%ti%') }],
         relations: ['categories'],
       });
     });
@@ -172,10 +169,10 @@ describe('AnnouncementsService', () => {
   });
 
   describe('remove', () => {
-    it('should find and then remove the record', async () => {
+    it('should find and then softRemove the record', async () => {
       const mockEntity = createMockAnnouncement(1);
       announcementRepo.findOne.mockResolvedValue(mockEntity);
-      announcementRepo.remove.mockResolvedValue(mockEntity);
+      announcementRepo.softRemove.mockResolvedValue(mockEntity);
 
       const result = await service.remove(1);
 
@@ -183,7 +180,7 @@ describe('AnnouncementsService', () => {
         where: { id: 1 },
         relations: ['categories'],
       });
-      expect(announcementRepo.remove).toHaveBeenCalledWith(mockEntity);
+      expect(announcementRepo.softRemove).toHaveBeenCalledWith(mockEntity);
       expect(result.id).toBe(1);
     });
 
