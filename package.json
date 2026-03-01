@@ -1,0 +1,11 @@
+{
+  "name": "my-project-root",
+  "scripts": {
+    "postinstall": "npm install --prefix server && npm install --prefix client",
+    "start:dev": "concurrently --kill-others --handle-input \"npm run start:dev --prefix server\" \"npm run dev --prefix client\"",
+    "docker:db": "docker-compose up -d"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
