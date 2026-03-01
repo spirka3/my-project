@@ -1,39 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { In, ILike } from 'typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository, In, ILike } from 'typeorm';
 import { AnnouncementsService } from './announcements.service';
 import { Announcement } from './entities/announcement.entity';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Category } from '../categories/entities/category.entity';
 
 describe('AnnouncementsService', () => {
   let service: AnnouncementsService;
+  let announcementRepo: jest.Mocked<Repository<Announcement>>;
+  let categoryRepo: jest.Mocked<Repository<Category>>;
 
-  const mockCategory = { id: 1, name: 'Category' };
-  const mockAnnouncement = {
-    id: 1,
-    title: 'Title',
-    categories: [mockCategory],
-    publicationDate: new Date(),
-  };
+  const createMockCategory = (id = 1) =>
+    ({ id, name: `Category ${id}` }) as Category;
 
-  const mockAnnouncementRepository = {
-    find: jest.fn().mockResolvedValue([mockAnnouncement]),
-    findOne: jest.fn().mockResolvedValue(mockAnnouncement),
-    create: jest.fn().mockImplementation((dto) => ({
-      id: 1,
-      ...dto,
-    })),
-    save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
-    preload: jest.fn().mockImplementation((dto) => {
-      return Promise.resolve({ ...mockAnnouncement, ...dto });
-    }),
-    remove: jest.fn().mockResolvedValue(mockAnnouncement),
-  };
-
-  const mockCategoryRepository = {
-    findBy: jest.fn().mockResolvedValue([mockCategory]),
-  };
+  const createMockAnnouncement = (id = 1) =>
+    ({
+      id,
+      title: 'Title',
+      content: 'Content',
+      categories: [createMockCategory()],
+      publicationDate: new Date(),
+    }) as Announcement;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -41,20 +29,27 @@ describe('AnnouncementsService', () => {
         AnnouncementsService,
         {
           provide: getRepositoryToken(Announcement),
-          useValue: mockAnnouncementRepository,
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+            preload: jest.fn(),
+            remove: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Category),
-          useValue: mockCategoryRepository,
+          useValue: {
+            findBy: jest.fn(),
+          },
         },
       ],
     }).compile();
 
     service = module.get<AnnouncementsService>(AnnouncementsService);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    announcementRepo = module.get(getRepositoryToken(Announcement));
+    categoryRepo = module.get(getRepositoryToken(Category));
   });
 
   it('should be defined', () => {
@@ -62,95 +57,139 @@ describe('AnnouncementsService', () => {
   });
 
   describe('create', () => {
-    it('should create and save a new announcement', async () => {
-      const input = {
-        title: 'New',
-        content: 'Content',
-        categoryIds: [1],
-        publicationDate: new Date(),
-      };
+    const input = {
+      title: 'New title',
+      content: 'New content',
+      categoryIds: [1, 2],
+      publicationDate: new Date(),
+    };
+
+    it('should successfully create an announcement with categories', async () => {
+      const mockCategories = [createMockCategory(1), createMockCategory(2)];
+      categoryRepo.findBy.mockResolvedValue(mockCategories);
+      announcementRepo.create.mockImplementation((dto) => dto as Announcement);
+      announcementRepo.save.mockImplementation(async (entity) =>
+        Promise.resolve({ id: 100, ...entity } as Announcement),
+      );
+
       const result = await service.create(input);
 
-      expect(mockAnnouncementRepository.create).toHaveBeenCalled();
-      expect(mockAnnouncementRepository.save).toHaveBeenCalled();
-      expect(result).toMatchObject({
-        title: input.title,
-        content: input.content,
-        publicationDate: input.publicationDate,
-      });
-      expect(result.categories).toEqual([mockCategory]);
+      expect(categoryRepo.findBy).toHaveBeenCalledWith({ id: In([1, 2]) });
+      expect(announcementRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: input.title,
+          categories: mockCategories,
+        }),
+      );
+      expect(result.id).toBe(100);
+    });
+
+    it('should throw NotFoundException if any category ID is invalid', async () => {
+      categoryRepo.findBy.mockResolvedValue([createMockCategory(1)]);
+
+      await expect(service.create(input)).rejects.toThrow(NotFoundException);
+      expect(announcementRepo.save).not.toHaveBeenCalled();
     });
   });
 
   describe('findAll', () => {
-    it('should return all announcements when no filter is provided', async () => {
-      const result = await service.findAll();
-      expect(result).toEqual([mockAnnouncement]);
-      expect(mockAnnouncementRepository.find).toHaveBeenCalledWith({
-        where: {},
+    it('should filter by searchTerm and categoryIds', async () => {
+      const filter = { searchTerm: 'ti', categoryIds: [1] };
+      announcementRepo.find.mockResolvedValue([createMockAnnouncement()]);
+
+      await service.findAll(filter);
+
+      expect(announcementRepo.find).toHaveBeenCalledWith({
+        where: {
+          title: ILike('%ti%'),
+          categories: { id: In([1]) },
+        },
         relations: ['categories'],
       });
     });
 
-    it('should apply ILike filter when searchTerm is provided', async () => {
-      await service.findAll({ searchTerm: 'test' });
-      expect(mockAnnouncementRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            title: ILike('%test%'),
-          },
-          relations: ['categories'],
-        }),
-      );
-    });
-
-    it('should apply In filter when categoryIds are provided', async () => {
-      await service.findAll({ categoryIds: [1] });
-      expect(mockAnnouncementRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            categories: { id: In([1]) },
-          },
-          relations: ['categories'],
-        }),
-      );
+    it('should return empty array when no announcements match', async () => {
+      announcementRepo.find.mockResolvedValue([]);
+      const result = await service.findAll();
+      expect(result).toEqual([]);
     });
   });
 
   describe('findOne', () => {
-    it('should return an announcement if found', async () => {
-      const result = await service.findOne(mockAnnouncement.id);
+    it('should return an announcement', async () => {
+      const mockAnnouncement = createMockAnnouncement(1);
+      announcementRepo.findOne.mockResolvedValue(mockAnnouncement);
+
+      const result = await service.findOne(1);
+
+      expect(announcementRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['categories'],
+      });
       expect(result).toEqual(mockAnnouncement);
+      expect(result.categories).toBeDefined();
     });
 
-    it('should throw NotFoundException if announcement does not exist', async () => {
-      mockAnnouncementRepository.findOne.mockResolvedValueOnce(null);
+    it('should throw a NotFoundException if the announcement does not exist', async () => {
+      announcementRepo.findOne.mockResolvedValue(null);
+
       await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(999)).rejects.toThrow(
+        'Announcement with id 999 not found',
+      );
     });
   });
 
   describe('update', () => {
-    it('should update and return the announcement', async () => {
-      const updatedAnnouncement = {
-        ...mockAnnouncement,
-        title: 'Updated',
-      };
-      const result = await service.update(mockAnnouncement.id, {
-        ...mockAnnouncement,
-        ...updatedAnnouncement,
-      });
-      expect(mockAnnouncementRepository.preload).toHaveBeenCalled();
-      expect(mockAnnouncementRepository.save).toHaveBeenCalled();
-      expect(result.id).toEqual(mockAnnouncement.id);
-      expect(result.title).toEqual(updatedAnnouncement.title);
+    const input = { id: 1, title: 'Updated Title', categoryIds: [1] };
+
+    it('should update entity and relations correctly', async () => {
+      const existing = createMockAnnouncement(1);
+      categoryRepo.findBy.mockResolvedValue([createMockCategory(1)]);
+      announcementRepo.preload.mockResolvedValue({
+        ...existing,
+        ...input,
+      } as Announcement);
+      announcementRepo.save.mockImplementation(async (entity) =>
+        Promise.resolve(entity as Announcement),
+      );
+
+      const result = await service.update(1, input);
+
+      expect(announcementRepo.preload).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, title: 'Updated Title' }),
+      );
+      expect(result.title).toBe('Updated Title');
+    });
+
+    it('should throw NotFoundException if announcement does not exist', async () => {
+      categoryRepo.findBy.mockResolvedValue([createMockCategory(1)]);
+      announcementRepo.preload.mockResolvedValue(undefined);
+      await expect(service.update(999, input)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('remove', () => {
-    it('should remove and return the announcement', async () => {
-      const result = await service.remove(mockAnnouncement.id);
-      expect(mockAnnouncementRepository.remove).toHaveBeenCalled();
-      expect(result).toEqual(mockAnnouncement);
+    it('should find and then remove the record', async () => {
+      const mockEntity = createMockAnnouncement(1);
+      announcementRepo.findOne.mockResolvedValue(mockEntity);
+      announcementRepo.remove.mockResolvedValue(mockEntity);
+
+      const result = await service.remove(1);
+
+      expect(announcementRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['categories'],
+      });
+      expect(announcementRepo.remove).toHaveBeenCalledWith(mockEntity);
+      expect(result.id).toBe(1);
+    });
+
+    it('should throw NotFoundException if announcement does not exist', async () => {
+      announcementRepo.findOne.mockResolvedValue(null);
+      await expect(service.remove(999)).rejects.toThrow(NotFoundException);
     });
   });
 });
