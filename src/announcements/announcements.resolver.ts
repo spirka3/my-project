@@ -3,44 +3,49 @@ import { AnnouncementsService } from './announcements.service';
 import { Announcement } from './entities/announcement.entity';
 import { CreateAnnouncementInput } from './dto/create-announcement.input';
 import { UpdateAnnouncementInput } from './dto/update-announcement.input';
+import { AnnouncementsFilterInput } from './dto/filter.announcement.input';
 
 @Resolver(() => Announcement)
 export class AnnouncementsResolver {
   constructor(private readonly announcementsService: AnnouncementsService) {}
 
   @Mutation(() => Announcement)
-  createAnnouncement(
+  async createAnnouncement(
     @Args('createAnnouncementInput')
     createAnnouncementInput: CreateAnnouncementInput,
-  ): Announcement {
-    return this.announcementsService.create(createAnnouncementInput);
+  ): Promise<Announcement> {
+    return await this.announcementsService.create(createAnnouncementInput);
   }
 
   @Query(() => [Announcement], { name: 'announcements' })
-  findAll(): Announcement[] {
-    return this.announcementsService.findAll();
+  async findAll(
+    @Args('filter', { nullable: true }) filter?: AnnouncementsFilterInput,
+  ): Promise<Announcement[]> {
+    return await this.announcementsService.findAll(filter);
   }
 
   @Query(() => Announcement, { name: 'announcement' })
-  findOne(@Args('id', { type: () => Int }) id: number): Announcement {
-    return this.announcementsService.findOne(id);
+  async findOne(
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<Announcement> {
+    return await this.announcementsService.findOne(id);
   }
 
   @Mutation(() => Announcement)
-  updateAnnouncement(
+  async updateAnnouncement(
     @Args('updateAnnouncementInput')
     updateAnnouncementInput: UpdateAnnouncementInput,
-  ): Announcement {
-    return this.announcementsService.update(
+  ): Promise<Announcement> {
+    return await this.announcementsService.update(
       updateAnnouncementInput.id,
       updateAnnouncementInput,
     );
   }
 
   @Mutation(() => Announcement)
-  removeAnnouncement(
+  async removeAnnouncement(
     @Args('id', { type: () => Int }) id: number,
-  ): Announcement {
-    return this.announcementsService.remove(id);
+  ): Promise<Announcement> {
+    return await this.announcementsService.remove(id);
   }
 }

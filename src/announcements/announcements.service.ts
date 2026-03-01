@@ -1,129 +1,86 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In, ILike } from 'typeorm';
 import { Announcement } from './entities/announcement.entity';
 import { CreateAnnouncementInput } from './dto/create-announcement.input';
 import { UpdateAnnouncementInput } from './dto/update-announcement.input';
+import { AnnouncementsFilterInput } from './dto/filter.announcement.input';
 import { Category } from '../categories/entities/category.entity';
 
 @Injectable()
 export class AnnouncementsService {
-  private readonly announcements: Announcement[] = [];
-  private readonly categories: Category[] = [];
+  constructor(
+    @InjectRepository(Announcement)
+    private readonly announcementRepository: Repository<Announcement>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
+  ) {}
 
-  constructor() {
-    const now = new Date();
+  async create(
+    createAnnouncementInput: CreateAnnouncementInput,
+  ): Promise<Announcement> {
+    const { categoryIds, ...details } = createAnnouncementInput;
 
-    const cat1 = {
-      id: 1,
-      name: 'cat1',
-      createdAt: now,
-      updatedAt: now,
-    };
-    const cat2 = {
-      id: 2,
-      name: 'cat2',
-      createdAt: now,
-      updatedAt: now,
-    };
+    const categories = await this.categoryRepository.findBy({
+      id: In(categoryIds),
+    });
 
-    this.categories.push(cat1, cat2);
+    const newAnnouncement = this.announcementRepository.create({
+      ...details,
+      categories,
+    });
 
-    this.announcements.push(
-      {
-        id: 1,
-        title: 'Title 1',
-        content: 'Content 1',
-        publicationDate: new Date('2026-03-01T09:00:00.000Z'),
-        categories: [cat1],
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: 2,
-        title: 'Title 2',
-        content: 'Content 2',
-        publicationDate: new Date('2026-03-01T10:00:00.000Z'),
-        categories: [cat2],
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: 3,
-        title: 'Title 3',
-        content: 'Content 3',
-        publicationDate: new Date('2026-03-01T11:00:00.000Z'),
-        categories: [cat1, cat2],
-        createdAt: now,
-        updatedAt: now,
-      },
-    );
+    return await this.announcementRepository.save(newAnnouncement);
   }
 
-  create(createAnnouncementInput: CreateAnnouncementInput): Announcement {
-    const now = new Date();
+  async findAll(filter?: AnnouncementsFilterInput): Promise<Announcement[]> {
+    const { searchTerm, categoryIds } = filter || {};
 
-    const categories = this.categories.filter((c) =>
-      createAnnouncementInput.categoryIds.includes(c.id),
-    );
-
-    const announcement: Announcement = {
-      id: 4,
-      title: createAnnouncementInput.title,
-      content: createAnnouncementInput.content,
-      publicationDate: createAnnouncementInput.publicationDate,
-      categories: categories,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.announcements.push(announcement);
-    return announcement;
+    return await this.announcementRepository.find({
+      where: {
+        ...(searchTerm && { title: ILike(`%${searchTerm}%`) }),
+        ...(categoryIds?.length && { categories: { id: In(categoryIds) } }),
+      },
+      relations: ['categories'],
+    });
   }
 
-  findAll(): Announcement[] {
-    return this.announcements;
-  }
-
-  findOne(id: number): Announcement {
-    const announcement = this.announcements.find((a) => a.id === id);
+  async findOne(id: number): Promise<Announcement> {
+    const announcement = await this.announcementRepository.findOne({
+      where: { id },
+      relations: ['categories'],
+    });
     if (!announcement) {
       throw new NotFoundException(`Announcement with id ${id} not found`);
     }
     return announcement;
   }
 
-  update(
+  async update(
     id: number,
     updateAnnouncementInput: UpdateAnnouncementInput,
-  ): Announcement {
-    const announcement = this.findOne(id);
+  ): Promise<Announcement> {
+    const categories = updateAnnouncementInput.categoryIds
+      ? await this.categoryRepository.findBy({
+          id: In(updateAnnouncementInput.categoryIds),
+        })
+      : [];
 
+    const announcement = await this.announcementRepository.preload({
+      ...updateAnnouncementInput,
+      categories,
+    });
 
-    if (updateAnnouncementInput.title !== undefined) {
-      announcement.title = updateAnnouncementInput.title;
-    }
-    if (updateAnnouncementInput.content !== undefined) {
-      announcement.content = updateAnnouncementInput.content;
-    }
-    if (updateAnnouncementInput.publicationDate !== undefined) {
-      announcement.publicationDate = updateAnnouncementInput.publicationDate;
-    }
-    if (updateAnnouncementInput.categoryIds !== undefined) {
-      announcement.categories = this.categories.filter((c) =>
-        (updateAnnouncementInput.categoryIds || []).includes(c.id),
-      );
-    }
-
-    announcement.updatedAt = new Date();
-    return announcement;
-  }
-
-  remove(id: number): Announcement {
-    const index = this.announcements.findIndex((a) => a.id === id);
-    if (index === -1) {
+    if (!announcement) {
       throw new NotFoundException(`Announcement with id ${id} not found`);
     }
 
-    const [removed] = this.announcements.splice(index, 1);
-    return removed;
+    return await this.announcementRepository.save(announcement);
+  }
+
+  async remove(id: number): Promise<Announcement> {
+    const announcement = await this.findOne(id);
+
+    return await this.announcementRepository.remove(announcement);
   }
 }

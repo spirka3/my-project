@@ -3,7 +3,6 @@ import { NotFoundException } from '@nestjs/common';
 import { AnnouncementsResolver } from './announcements.resolver';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementInput } from './dto/create-announcement.input';
-import { Category } from '../categories/entities/category.entity';
 
 describe('AnnouncementsResolver', () => {
   let resolver: AnnouncementsResolver;
@@ -39,36 +38,36 @@ describe('AnnouncementsResolver', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of announcements', () => {
+    it('should return an array of announcements', async () => {
       const result = [
         { id: 1, title: 'Title 1' },
         { id: 2, title: 'Title 2' },
       ];
       mockService.findAll.mockReturnValue(result);
 
-      expect(resolver.findAll()).toEqual(result);
+      expect(await resolver.findAll()).toEqual(result);
       expect(mockService.findAll).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('findOne', () => {
-    it('should return a single announcement', () => {
+    it('should return a single announcement', async () => {
       const result = { id: 1, title: 'Title' };
       mockService.findOne.mockReturnValue(result);
 
-      expect(resolver.findOne(1)).toEqual(result);
+      expect(await resolver.findOne(1)).toEqual(result);
       expect(mockService.findOne).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException if service fails', () => {
+    it('should throw NotFoundException if service fails', async () => {
       mockService.findOne.mockRejectedValue(new NotFoundException());
 
-      void expect(resolver.findOne(99)).rejects.toThrow(NotFoundException);
+      await expect(resolver.findOne(99)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('createAnnouncement', () => {
-    it('should call service.create with correct data', () => {
+    it('should call service.create with correct data', async () => {
       const input: CreateAnnouncementInput = {
         title: 'New',
         content: 'Content',
@@ -78,7 +77,7 @@ describe('AnnouncementsResolver', () => {
       const created = { id: 1, ...input };
       mockService.create.mockReturnValue(created);
 
-      const result = resolver.createAnnouncement(input);
+      const result = await resolver.createAnnouncement(input);
 
       expect(result).toEqual(created);
       expect(mockService.create).toHaveBeenCalledWith(input);
@@ -86,11 +85,11 @@ describe('AnnouncementsResolver', () => {
   });
 
   describe('removeAnnouncement', () => {
-    it('should return the removed item', () => {
+    it('should return the removed item', async () => {
       const removed = { id: 1, title: 'Deleted' };
       mockService.remove.mockReturnValue(removed);
 
-      expect(resolver.removeAnnouncement(1)).toEqual(removed);
+      expect(await resolver.removeAnnouncement(1)).toEqual(removed);
       expect(mockService.remove).toHaveBeenCalledWith(1);
     });
   });

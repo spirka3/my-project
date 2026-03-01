@@ -12,6 +12,11 @@ type Announcement {
   updatedAt: DateTime!
 }
 
+input AnnouncementsFilterInput {
+  categoryIds: [Int!]
+  searchTerm: String
+}
+
 type Category {
   createdAt: DateTime!
   id: Int!
@@ -46,7 +51,7 @@ type Mutation {
 
 type Query {
   announcement(id: Int!): Announcement!
-  announcements: [Announcement!]!
+  announcements(filter: AnnouncementsFilterInput): [Announcement!]!
   categories: [Category!]!
   category(id: Int!): Category!
 }
