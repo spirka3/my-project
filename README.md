@@ -26,14 +26,14 @@ Run in root folder
     cp server/.env.example server/.env
     ```
 
-3. Launch the Backend & Frontend:
-    ```bash
-    npm run start:dev
-    ```
-
-4. Start the Database:
+3. Start the Database:
     ```bash
     npm run docker:db
+    ```
+   
+4. Launch the Backend & Frontend:
+    ```bash
+    npm run start:dev
     ```
 
 ---
