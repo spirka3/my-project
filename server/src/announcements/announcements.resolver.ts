@@ -33,11 +33,13 @@ export class AnnouncementsResolver {
 
   @Mutation(() => Announcement)
   async updateAnnouncement(
-    @Args('id', { type: () => Int }) id: number,
     @Args('updateAnnouncementInput')
     updateAnnouncementInput: UpdateAnnouncementInput,
   ): Promise<Announcement> {
-    return await this.announcementsService.update(id, updateAnnouncementInput);
+    return await this.announcementsService.update(
+      updateAnnouncementInput.id,
+      updateAnnouncementInput,
+    );
   }
 
   @Mutation(() => Announcement)

@@ -34,7 +34,7 @@ describe('AnnouncementsService', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
-            preload: jest.fn(),
+            merge: jest.fn(),
             softRemove: jest.fn(),
           },
         },
@@ -142,27 +142,28 @@ describe('AnnouncementsService', () => {
 
     it('should update entity and relations correctly', async () => {
       const existing = createMockAnnouncement(1);
+      announcementRepo.findOne.mockResolvedValue(existing);
       categoryRepo.findBy.mockResolvedValue([createMockCategory(1)]);
-      announcementRepo.preload.mockResolvedValue({
-        ...existing,
-        ...input,
-      } as Announcement);
+      announcementRepo.merge.mockImplementation(
+        (entity: Announcement, ...sources: Partial<Announcement>[]) => {
+          return Object.assign(entity, ...sources) as Announcement;
+        },
+      );
       announcementRepo.save.mockImplementation(async (entity) =>
         Promise.resolve(entity as Announcement),
       );
 
-      const result = await service.update(1, input);
+      const result = await service.update(input.id, input);
 
-      expect(announcementRepo.preload).toHaveBeenCalledWith(
+      expect(announcementRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ id: 1, title: 'Updated Title' }),
       );
       expect(result.title).toBe('Updated Title');
     });
 
     it('should throw NotFoundException if announcement does not exist', async () => {
-      categoryRepo.findBy.mockResolvedValue([createMockCategory(1)]);
-      announcementRepo.preload.mockResolvedValue(undefined);
-      await expect(service.update(999, input)).rejects.toThrow(
+      announcementRepo.findOne.mockResolvedValue(null);
+      await expect(service.update(input.id, input)).rejects.toThrow(
         NotFoundException,
       );
     });

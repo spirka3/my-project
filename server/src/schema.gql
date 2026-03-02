@@ -33,7 +33,7 @@ input CreateAnnouncementInput {
 }
 
 input CreateCategoryInput {
-  name: Int!
+  name: String!
 }
 
 """
@@ -46,7 +46,7 @@ type Mutation {
   createCategory(createCategoryInput: CreateCategoryInput!): Category!
   removeAnnouncement(id: Int!): Announcement!
   removeCategory(id: Int!): Category!
-  updateAnnouncement(id: Int!, updateAnnouncementInput: UpdateAnnouncementInput!): Announcement!
+  updateAnnouncement(updateAnnouncementInput: UpdateAnnouncementInput!): Announcement!
   updateCategory(updateCategoryInput: UpdateCategoryInput!): Category!
 }
 
@@ -67,5 +67,5 @@ input UpdateAnnouncementInput {
 
 input UpdateCategoryInput {
   id: Int!
-  name: Int
+  name: String
 }

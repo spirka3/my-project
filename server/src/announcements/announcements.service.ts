@@ -84,20 +84,21 @@ export class AnnouncementsService {
     id: number,
     updateAnnouncementInput: UpdateAnnouncementInput,
   ): Promise<Announcement> {
-    const { categoryIds = [] } = updateAnnouncementInput;
+    const existingAnnouncement = await this.findOne(id);
 
+    const { categoryIds = [] } = updateAnnouncementInput;
     const categories = await this.fetchCategories(categoryIds);
 
-    const announcement = await this.announcementRepository.preload({
-      ...updateAnnouncementInput,
-      categories,
-    });
+    const updatedAnnouncement = this.announcementRepository.merge(
+      existingAnnouncement,
+      updateAnnouncementInput,
+      {
+        categories:
+          categories.length > 0 ? categories : existingAnnouncement.categories,
+      },
+    );
 
-    if (!announcement) {
-      throw new NotFoundException(`Announcement with id ${id} not found`);
-    }
-
-    return await this.announcementRepository.save(announcement);
+    return await this.announcementRepository.save(updatedAnnouncement);
   }
 
   async remove(id: number): Promise<Announcement> {

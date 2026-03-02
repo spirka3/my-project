@@ -5,6 +5,7 @@ import {
   IsArray,
   IsDate,
   ArrayUnique,
+  ArrayNotEmpty,
 } from 'class-validator';
 
 @InputType()
@@ -25,6 +26,7 @@ export class CreateAnnouncementInput {
 
   @Field(() => [Int])
   @IsArray()
+  @ArrayNotEmpty()
   @ArrayUnique()
   categoryIds: number[];
 }
