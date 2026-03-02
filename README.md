@@ -4,7 +4,7 @@
 
 * Backend: NestJS, GraphQL (Code-first), TypeORM
 * Database: PostgreSQL (Docker)
-* Frontend: React (Vite)
+* Frontend: React (Vite) // ...without implemented design
 * Testing: Jest
 
 ---
@@ -13,23 +13,27 @@
 You need Node.js and Docker installed on your machine.
 
 ### Setup
+Run in root folder
 
 1.  Install dependencies:
     ```bash
-    # Run in root folder
     npm install
     ```
 
-2.  Start the Database:
+2.  Set env files:
     ```bash
-    # Run in root folder
-    npm run docker:db
+    cp .env.example .env
+    cp server/.env.example server/.env
     ```
 
-3.  Launch the Backend & Frontend:
+3. Launch the Backend & Frontend:
     ```bash
-    # Run in root folder
     npm run start:dev
+    ```
+
+4. Start the Database:
+    ```bash
+    npm run docker:db
     ```
 
 ---
@@ -44,10 +48,124 @@ You need Node.js and Docker installed on your machine.
 
 ## Testing
 
-Test GraphQL in Postman Collection: [Open Shared Workspace](https://web.postman.co/workspace/My-Workspace~4231c771-d876-47d9-8dc5-0a9027d129d3/request/69a4beef5d99735f55f073ce?action=share&source=copy-link&creator=12631069)
-
-Test Backend:
-```bash
-# Run in root folder
-npm test --prefix server
-```
+1. Test Backend:
+    ```bash
+    # Run in root folder
+    npm test --prefix server
+    ```
+   
+2. Test GraphQL in Postman Collection
+    ```bash
+    # http://localhost:3000/graphql
+    query Announcement {
+        announcement(id: 1) {
+            content
+            createdAt
+            deletedAt
+            id
+            publicationDate
+            title
+            updatedAt
+            categories {
+                createdAt
+                id
+                name
+                updatedAt
+            }
+        }
+        noFilter: announcements {
+            content
+            createdAt
+            deletedAt
+            id
+            publicationDate
+            title
+            updatedAt
+            categories {
+                createdAt
+                id
+                name
+                updatedAt
+            }
+        }
+        searchFilter: announcements(filter: { searchTerm: "ent", categoryIds: [1] }) {
+            content
+            createdAt
+            deletedAt
+            id
+            publicationDate
+            title
+            updatedAt
+            categories {
+                createdAt
+                id
+                name
+                updatedAt
+            }
+        }
+    }
+    
+    mutation CreateAnnouncement {
+        createAnnouncement(
+            createAnnouncementInput: {
+                title: "Title A"
+                content: "Content A"
+                categoryIds: [1, 2]
+                publicationDate: "2026-03-01T12:00:00Z"
+            }
+        ) {
+            content
+            createdAt
+            deletedAt
+            id
+            publicationDate
+            title
+            updatedAt
+            categories {
+                createdAt
+                id
+                name
+                updatedAt
+            }
+        }
+    }
+    
+    mutation UpdateAnnouncement {
+        updateAnnouncement(id: 1, updateAnnouncementInput: {
+            id: 2
+            publicationDate: "2026-03-01T12:00:00Z"
+        }) {
+            content
+            createdAt
+            deletedAt
+            id
+            publicationDate
+            title
+            updatedAt
+            categories {
+                createdAt
+                id
+                name
+                updatedAt
+            }
+        }
+    }
+    
+    mutation RemoveAnnouncement {
+        removeAnnouncement(id: 1) {
+            content
+            createdAt
+            deletedAt
+            id
+            publicationDate
+            title
+            updatedAt
+            categories {
+                createdAt
+                id
+                name
+                updatedAt
+            }
+        }
+    }
+    ```
