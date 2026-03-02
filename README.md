@@ -131,7 +131,7 @@ Run in root folder
     }
     
     mutation UpdateAnnouncement {
-        updateAnnouncement(id: 1, updateAnnouncementInput: {
+        updateAnnouncement(updateAnnouncementInput: {
             id: 2
             publicationDate: "2026-03-01T12:00:00Z"
         }) {
